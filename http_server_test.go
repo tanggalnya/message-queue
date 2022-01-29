@@ -6,29 +6,23 @@ import (
 	"testing"
 )
 
-func TestPing(t *testing.T) {
-	t.Run("return pong", func(t *testing.T) {
-		request, _ := http.NewRequest(http.MethodGet, "/ping", nil)
-		response := httptest.NewRecorder()
-
-		gsheet := &HttpServer{}
-		gsheet.ServeHttp(response, request)
-
-		assertStatus(t, response.Code, 200)
-		assertResponseBody(t, response.Body.String(), "pong")
-	})
-}
-
-func assertStatus(t testing.TB, got, want int) {
-	t.Helper()
-	if got != want {
-		t.Errorf("did not get correct status, got %d, want %d", got, want)
+func TestHealthCheckHandler(t *testing.T) {
+	req, err := http.NewRequest("GET", "/health", nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-}
 
-func assertResponseBody(t testing.TB, got, want string) {
-	t.Helper()
-	if got != want {
-		t.Errorf("response body is wrong, got %q want %q", got, want)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(HealtCheckHandler)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want  %v", status, http.StatusOK)
+	}
+
+	expected := `{"ping": "pong"}`
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 	}
 }

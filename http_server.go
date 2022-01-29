@@ -1,20 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"io"
+	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-type HttpServer struct{}
+func main() {
+	r := mux.NewRouter()
+	r.HandleFunc("/ping", HealtCheckHandler).Name("healthCheck")
 
-func (hs *HttpServer) ServeHttp(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-
-	if path == "/ping" {
-		hs.processPing(w)
-	}
+	log.Fatal(http.ListenAndServe("localhost:8080", r))
 }
 
-func (hs *HttpServer) processPing(w http.ResponseWriter) {
-	fmt.Fprint(w, "pong")
+func HealtCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	io.WriteString(w, `{"ping": "pong"}`)
 }
