@@ -10,14 +10,22 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/ping", HealtCheckHandler).Name("healthCheck")
+	r.HandleFunc("/ping", HealthCheckHandler).Methods(http.MethodGet).Name("health_check")
+	r.HandleFunc("/guest-book/create", GuestBookCreateHandler).Methods(http.MethodPost).Name("guest_book_create")
 
 	log.Fatal(http.ListenAndServe("localhost:8080", r))
 }
 
-func HealtCheckHandler(w http.ResponseWriter, r *http.Request) {
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	io.WriteString(w, `{"ping": "pong"}`)
+}
+
+func GuestBookCreateHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	io.WriteString(w, `{"success": true}`)
 }
