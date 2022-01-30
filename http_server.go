@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"tanggalnya.com/message-queue/services"
 )
 
 var (
@@ -34,6 +35,15 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GuestBookCreateHandler(w http.ResponseWriter, r *http.Request) {
+	publisher := services.Publisher{
+		Uri:          *uri,
+		QueueName:    *queueName,
+		Exchange:     *exchange,
+		ExchangeType: *exchangeType,
+		Body:         *body,
+		Reliable:     *reliable,
+	}
+	publisher.Publish()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
