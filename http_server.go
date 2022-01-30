@@ -1,11 +1,21 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+)
+
+var (
+	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
+	queueName    = flag.String("queue", "test-queue", "Ephemeral AMQP queue name")
+	exchange     = flag.String("exchange", "test-exchange", "Durable, non-auto-deleted AMQP exchange name")
+	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
+	body         = flag.String("body", "body test", "Body of message")
+	reliable     = flag.Bool("reliable", true, "Wait for the publisher confirmation before exiting")
 )
 
 func main() {

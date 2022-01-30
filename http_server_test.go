@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/NeowayLabs/wabbit/amqptest"
+	"github.com/NeowayLabs/wabbit/amqptest/server"
 )
 
 func TestHealthCheckHandler(t *testing.T) {
@@ -29,8 +32,7 @@ func TestHealthCheckHandler(t *testing.T) {
 }
 
 func TestGuestBookInsertHandler(t *testing.T) {
-	t.Run("when correct request body", func(t *testing.T) {
-		jsonStr := []byte(`
+	jsonStr := []byte(`
 		{
     	  "event": {
     	    "data": {
@@ -48,6 +50,7 @@ func TestGuestBookInsertHandler(t *testing.T) {
     	    }
     	  }
     	}`)
+	t.Run("when correct request body it return ok", func(t *testing.T) {
 		req, err := http.NewRequest("POST", "/guest-book/create", bytes.NewBuffer(jsonStr))
 		if err != nil {
 			t.Fatal(err)
@@ -62,6 +65,37 @@ func TestGuestBookInsertHandler(t *testing.T) {
 
 		expected := `{"success": true}`
 		assertResponseBody(t, rr.Body.String(), expected)
+	})
+
+	t.Run("when data valid it populate rabbitmq event", func(t *testing.T) {
+		req, err := http.NewRequest("POST", "/guest-book/create", bytes.NewBuffer(jsonStr))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(GuestBookCreateHandler)
+
+		handler.ServeHTTP(rr, req)
+
+		fakeServer := server.NewServer("amqp://localhost:5672/%2f")
+		fakeServer.Start()
+
+		mockConn, err := amqptest.Dial("amqp://localhost:5672/%2f")
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		channel, err := mockConn.Channel()
+		if err != nil {
+			t.Error(err)
+		}
+
+		err = channel.ExchangeDeclare(*exchange, *exchangeType, nil)
+		if err != nil {
+			t.Error(err)
+		}
 	})
 }
 
