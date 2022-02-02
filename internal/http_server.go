@@ -6,17 +6,18 @@ import (
 	"log"
 	"net/http"
 
+	"tanggalnya.com/message-queue/internal/services/rabbitMQ"
+
 	"github.com/gorilla/mux"
-	"tanggalnya.com/message-queue/services"
 )
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	queueName    = flag.String("queue", "test-queue", "Ephemeral AMQP queue name")
+	queueName    = flag.String("rabbitMQ", "test-rabbitMQ", "Ephemeral AMQP rabbitMQ name")
 	exchange     = flag.String("exchange", "test-exchange", "Durable, non-auto-deleted AMQP exchange name")
 	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
 	body         = flag.String("body", "body test", "Body of message")
-	reliable     = flag.Bool("reliable", true, "Wait for the publisher confirmation before exiting")
+	reliable     = flag.Bool("reliable", true, "Wait for the rabbitMQ confirmation before exiting")
 )
 
 func main() {
@@ -35,15 +36,11 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GuestBookCreateHandler(w http.ResponseWriter, r *http.Request) {
-	publisher := services.Publisher{
-		Uri:          *uri,
-		QueueName:    *queueName,
-		Exchange:     *exchange,
-		ExchangeType: *exchangeType,
-		Body:         *body,
-		Reliable:     *reliable,
+	p := rabbitMQ.NewAmqpChannel()
+	err := p.Publish(*uri, *queueName, *exchange, *exchangeType, *body, *reliable)
+	if err != nil {
+		return
 	}
-	publisher.Publish()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
