@@ -8,14 +8,16 @@ import (
 )
 
 type AmqpChannel interface {
-	//ExchangeDeclare(name, kind string, durable, autoDelete, internal, noWait bool) error
-	//QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool) (amqp.Queue, error)
-	//QueueBind(name, key, exchange string, noWait bool) error
-	//Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error)
+	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error)
 	Publish(uri string, queueName string, exchange string, exchangeType string, body string, reliable bool) error
 }
 
 type amqpService struct{}
+
+func (a amqpService) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
+	//TODO implement me
+	panic("implement me")
+}
 
 func NewAmqpChannel() AmqpChannel {
 	return &amqpService{}
