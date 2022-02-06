@@ -10,3 +10,6 @@
 
 ### Source
 - [HOW TO SET UP RABBITMQ WITH DOCKER COMPOSE](https://x-team.com/blog/set-up-rabbitmq-with-docker-compose/)
+
+# Docs
+- [Improving handler](https://www.alexedwards.net/blog/how-to-properly-parse-a-json-request-body)

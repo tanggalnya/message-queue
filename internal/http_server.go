@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"io"
 	"log"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"tanggalnya.com/message-queue/internal/models"
 	"tanggalnya.com/message-queue/internal/services/rabbitMQ"
 )
 
@@ -35,28 +37,28 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, `{"ping": "pong"}`)
 }
 
+type DataPayload struct {
+	Old *models.GuestBook
+	New *models.GuestBook
+}
+
+type GuestBookPayload struct {
+	Data DataPayload
+}
+
 func GuestBookCreateHandler(w http.ResponseWriter, r *http.Request) {
+	var gbp GuestBookPayload
+	err := json.NewDecoder(r.Body).Decode(&gbp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
 	sp := rabbitMQ.AmqpService{
 		Uri: *uri,
 	}
 	p := rabbitMQ.NewAmqpChannel(sp)
-	body := `
-	{
-		"data": {
-		  "old": null,
-		  "new": {
-		    "from": null,
-		    "is_public": true,
-		    "name": "a",
-		    "updated_at": "2022-01-29T16:14:55.062435+00:00",
-		    "created_at": "2022-01-29T16:14:55.062435+00:00",
-		    "id": "5f335ba6-39cb-466e-99ec-bbcb84b6cf85",
-		    "message": "a",
-		    "event_id": "9ebc9705-d6ab-4a82-8c7b-ba3802e5a241"
-		  }
-		}
-	}`
-	err := p.Publish(*queueName, *exchange, *exchangeType, body, *reliable)
+	body, err := json.Marshal(gbp.Data.New)
+	err = p.Publish(*queueName, *exchange, *exchangeType, string(body), *reliable)
 	if err != nil {
 		return
 	}
