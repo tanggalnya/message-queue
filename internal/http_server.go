@@ -10,16 +10,16 @@ import (
 	"github.com/gorilla/mux"
 
 	"tanggalnya.com/message-queue/internal/models"
-	"tanggalnya.com/message-queue/internal/services/rabbitMQ"
+	"tanggalnya.com/message-queue/internal/services/publisher"
 )
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	queueName    = flag.String("queue-name", "events", "Ephemeral AMQP rabbitMQ name")
+	queueName    = flag.String("queue-name", "events", "Ephemeral AMQP publisher name")
 	exchange     = flag.String("exchange-name", "events_topic", "Durable, non-auto-deleted AMQP exchange name")
 	exchangeType = flag.String("exchange-type", "topic", "Exchange type - direct|fanout|topic|x-custom")
 	//body         = flag.String("body", "body test", "Body of message")
-	reliable = flag.Bool("reliable", true, "Wait for the rabbitMQ confirmation before exiting")
+	reliable = flag.Bool("reliable", true, "Wait for the publisher confirmation before exiting")
 )
 
 func main() {
@@ -53,10 +53,10 @@ func GuestBookCreateHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	sp := rabbitMQ.AmqpService{
+	sp := publisher.AmqpService{
 		Uri: *uri,
 	}
-	p := rabbitMQ.NewAmqpChannel(sp)
+	p := publisher.NewAmqpChannel(sp)
 	body, err := json.Marshal(gbp.Data.New)
 	err = p.Publish(*queueName, *exchange, *exchangeType, string(body), *reliable)
 	if err != nil {

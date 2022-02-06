@@ -1,4 +1,4 @@
-package rabbitMQ
+package publisher
 
 import (
 	"log"
