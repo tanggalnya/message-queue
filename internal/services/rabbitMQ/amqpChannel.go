@@ -17,6 +17,10 @@ type AmqpService struct {
 	Uri string
 }
 
+func NewAmqpChannel(a AmqpService) AmqpChannel {
+	return &a
+}
+
 func (a AmqpService) Channel() (wabbit.Channel, error) {
 	log.Println("[-] Connecting to", a.Uri)
 	connection, err := connect(a.Uri)
@@ -40,28 +44,21 @@ func (a AmqpService) Consume(queue, consumer string, autoAck, exclusive, noLocal
 	panic("implement me")
 }
 
-func NewAmqpChannel(a AmqpService) AmqpChannel {
-	return &a
-}
-
 func (a AmqpService) Publish(queueName string, exchange string, exchangeType string, body string, reliable bool) error {
 	channel, err := a.Channel()
-	defer channel.Close()
-
-	log.Println("[-] Declaring Exchange", exchangeType, exchange)
-	err = channel.ExchangeDeclare(exchange, exchangeType, nil)
 
 	if err != nil {
-		log.Fatalf("[x] Failed to declare exchange: %s", err)
+		log.Fatalf("[x] Failed to open a channel: %s", err)
 	}
-	log.Println("[√] Exchange", exchange, "has been declared successfully")
+
+	defer channel.Close()
 
 	log.Println("[-] Declaring queue", queueName, "into channel")
 	queue, err := declareQueue(queueName, channel)
-
 	if err != nil {
 		log.Fatalf("[x] Queue could not be declared. Error: %s", err.Error())
 	}
+
 	log.Println("[√] Queue", queueName, "has been declared successfully")
 
 	if reliable {
@@ -75,10 +72,10 @@ func (a AmqpService) Publish(queueName string, exchange string, exchangeType str
 		defer confirmOne(confirms)
 	}
 
-	log.Println("[-] Sending message to queue:", queueName, "- exchange:", exchange)
+	log.Println("[-] Sending message to", queueName)
 	log.Println("\t", body)
 
-	err = publishMessage(body, exchange, queue, channel)
+	err = publishMessage(body, queue, channel)
 
 	if err != nil {
 		log.Fatalf("[x] Failed to publish a message. Error: %s", err.Error())
@@ -102,9 +99,9 @@ func declareQueue(queueName string, channel wabbit.Channel) (wabbit.Queue, error
 	)
 }
 
-func publishMessage(body string, exchange string, queue wabbit.Queue, channel wabbit.Channel) error {
+func publishMessage(body string, queue wabbit.Queue, channel wabbit.Channel) error {
 	return channel.Publish(
-		exchange,     // exchange
+		"",           // exchange
 		queue.Name(), // routing key
 		[]byte(body),
 		wabbit.Option{
