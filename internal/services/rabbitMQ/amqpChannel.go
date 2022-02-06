@@ -8,24 +8,18 @@ import (
 )
 
 type AmqpChannel interface {
+	Channel() (wabbit.Channel, error)
 	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error)
-	Publish(uri string, queueName string, exchange string, exchangeType string, body string, reliable bool) error
+	Publish(queueName string, exchange string, exchangeType string, body string, reliable bool) error
 }
 
-type amqpService struct{}
-
-func (a amqpService) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
-	//TODO implement me
-	panic("implement me")
+type AmqpService struct {
+	Uri string
 }
 
-func NewAmqpChannel() AmqpChannel {
-	return &amqpService{}
-}
-
-func (a amqpService) Publish(uri string, queueName string, exchange string, exchangeType string, body string, reliable bool) error {
-	log.Println("[-] Connecting to", uri)
-	connection, err := connect(uri)
+func (a AmqpService) Channel() (wabbit.Channel, error) {
+	log.Println("[-] Connecting to", a.Uri)
+	connection, err := connect(a.Uri)
 
 	if err != nil {
 		log.Fatalf("[x] AMQP connection error: %s", err)
@@ -34,11 +28,24 @@ func (a amqpService) Publish(uri string, queueName string, exchange string, exch
 	log.Println("[√] Connected successfully")
 
 	channel, err := connection.Channel()
-
 	if err != nil {
 		log.Fatalf("[x] Failed to open a channel: %s", err)
 	}
 
+	return channel, nil
+}
+
+func (a AmqpService) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewAmqpChannel(a AmqpService) AmqpChannel {
+	return &a
+}
+
+func (a AmqpService) Publish(queueName string, exchange string, exchangeType string, body string, reliable bool) error {
+	channel, err := a.Channel()
 	defer channel.Close()
 
 	log.Println("[-] Declaring Exchange", exchangeType, exchange)
@@ -115,74 +122,3 @@ func confirmOne(confirms <-chan wabbit.Confirmation) {
 		log.Printf("[x] Failed delivery of delivery tag: %d", confirmed.DeliveryTag)
 	}
 }
-
-//type Publisher interface {
-//	PublishEvent() error
-//}
-//type publisherService struct{}
-//
-//func NewPublisherService() Publisher {
-//	return &publisherService{}
-//}
-//
-//func (p publisherService) PublishEvent() error {
-//	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-//	failOnError(err, "Failed to connect to rabbitMQ")
-//	defer conn.Close()
-//
-//	ch, err := conn.Channel()
-//	failOnError(err, "Failed to open a channel")
-//	defer ch.Close()
-//
-//	err = ch.ExchangeDeclare(
-//		"logs_topic", // name
-//		"topic",      // type
-//		true,         // durable
-//		false,        // auto-deleted
-//		false,        // internal
-//		false,        // no-wait
-//		nil,          // arguments
-//	)
-//	failOnError(err, "Failed to declare an exchange")
-//
-//	body := bodyFrom(os.Args)
-//	err = ch.Publish(
-//		"logs_topic",          // exchange
-//		severityFrom(os.Args), // routing key
-//		false,                 // mandatory
-//		false,                 // immediate
-//		amqp.Publishing{
-//			ContentType: "text/plain",
-//			Body:        []byte(body),
-//		})
-//	failOnError(err, "Failed to publish a message")
-//
-//	log.Printf(" [x] Sent %s", body)
-//	return nil
-//}
-//
-//func bodyFrom(args []string) string {
-//	var s string
-//	if (len(args) < 3) || os.Args[2] == "" {
-//		s = "hello"
-//	} else {
-//		s = strings.Join(args[2:], " ")
-//	}
-//	return s
-//}
-//
-//func severityFrom(args []string) string {
-//	var s string
-//	if (len(args) < 2) || os.Args[1] == "" {
-//		s = "anonymous.info"
-//	} else {
-//		s = os.Args[1]
-//	}
-//	return s
-//}
-//
-//func failOnError(err error, msg string) {
-//	if err != nil {
-//		log.Panicf("%s: %s", msg, err)
-//	}
-//}

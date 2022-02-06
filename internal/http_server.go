@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"tanggalnya.com/message-queue/internal/services/rabbitMQ"
-
 	"github.com/gorilla/mux"
+
+	"tanggalnya.com/message-queue/internal/services/rabbitMQ"
 )
 
 var (
@@ -36,8 +36,11 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GuestBookCreateHandler(w http.ResponseWriter, r *http.Request) {
-	p := rabbitMQ.NewAmqpChannel()
-	err := p.Publish(*uri, *queueName, *exchange, *exchangeType, *body, *reliable)
+	sp := rabbitMQ.AmqpService{
+		Uri: *uri,
+	}
+	p := rabbitMQ.NewAmqpChannel(sp)
+	err := p.Publish(*queueName, *exchange, *exchangeType, *body, *reliable)
 	if err != nil {
 		return
 	}
